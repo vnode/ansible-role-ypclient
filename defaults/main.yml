@@ -1,0 +1,27 @@
+---
+# Required variables
+ypclient_domain: ""
+ypclient_servers: []
+ypclient_serverinfo: {}
+
+# YP/NIS optional settings
+ypclient_usedns: true
+ypclient_lookup_maps:
+  - name: 'passwd'
+    file: '/etc/master.passwd'
+    pattern: '+:*::::::::'
+    validate: 'pwd_mkdb -c %s'
+    notify: 'regen master.passwd'
+    mode: '0600'
+    owner: 'root'
+    group: 'wheel'
+  - name: 'group'
+    file: '/etc/group'
+    pattern: '+:*::'
+    mode: '0644'
+    owner: 'root'
+    group: 'wheel'
+
+# Options to handle multiple YP/NIS domains on a host
+ypclient_set_hosts: false       # If true, updates /etc/hosts
+ypclient_set_domainname: true   # If true, updates /etc/domainname

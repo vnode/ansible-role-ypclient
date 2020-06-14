@@ -1,0 +1,101 @@
+---
+- name: "Prepare the YP/NIS server"
+  hosts: ypservers
+  gather_facts: false
+  vars:
+    ansible_host_key_checking: false
+    ansible_user: vagrant
+    ansible_password: vagrant
+    ansible_become: true
+    ansible_become_method: sudo
+    ansible_become_user: root
+
+  roles:
+    - role: vnode.ypserver
+      vars:
+        ypserver_domain: "nisdomain"
+        ypserver_master: "master"
+        ypserver_servers: "{{ groups['ypservers'] }}"
+        ypserver_serverinfo:
+          master:
+            - "{{ hostvars['master']['ansible_host'] }}"
+        ypserver_usedns: false
+        ypserver_set_hosts: true
+        ypserver_set_cronjob: false
+        ypserver_source_dir: '/etc/{{ ypserver_domain }}'
+
+  pre_tasks:
+    - name: Create the directory to place the source files for our NIS maps
+      file:
+        path: "{{ ypserver_source_dir }}"
+        state: directory
+        owner: root
+        group: wheel
+        mode: "0700"
+      when:
+        - inventory_hostname == ypserver_master
+
+    - name: Create a master.passwd file
+      copy:
+        dest: "{{ ypserver_source_dir }}/master.passwd"
+        content: |
+          root:*************:0:0:daemon:0:0:Charlie &:/root:/bin/ksh
+          nisuser1:*************:1000:1000::0:0:NIS User #1:/nonexistent:/bin/ksh
+          nisuser2:*************:32765:32765::0:0:NIS User #2:/nonexistent:/bin/ksh
+          nobody:*:32767:32767::0:0:Unprivileged user:/nonexistent:/sbin/nologin
+        owner: root
+        group: wheel
+        mode: "0600"
+      when:
+        - inventory_hostname == ypserver_master
+
+    - name: Create a group file
+      copy:
+        dest: "{{ ypserver_source_dir }}/group"
+        content: |
+          wheel:*:0:root
+          nisgroup1:*:1000:nisuser1
+          nisgroup2:*:32765:nisuser2
+          nogroup:*:32766:
+          nobody:*:32767:
+        owner: root
+        group: wheel
+        mode: "0600"
+      when:
+        - inventory_hostname == ypserver_master
+
+
+- name: "Prepare the YP/NIS client"
+  hosts: ypclients
+  gather_facts: false
+  vars:
+    ansible_host_key_checking: false
+    ansible_user: vagrant
+    ansible_password: vagrant
+    ansible_become: true
+    ansible_become_method: sudo
+    ansible_become_user: root
+
+  roles:
+    - role: ansible-role-ypclient
+      vars:
+        ypclient_domain: "nisdomain"
+        ypclient_servers: "{{ groups['ypservers'] }}"
+        ypclient_serverinfo:
+          master:
+            - "{{ hostvars['master']['ansible_host'] }}"
+        ypclient_usedns: false
+        ypclient_set_hosts: true
+
+  tasks:
+    - name: "Test YP/NIS maps for succesful lookup"
+      command:
+        cmd: "ypmatch -d {{ ypclient_domain }} {{ mapname.key }} {{ mapname.map }}"
+      register: ypclient__ypmatch
+      changed_when: false
+      loop_control:
+        loop_var: mapname
+      with_items:
+        - { map: 'passwd',               key: 'nisuser1'  }
+        - { map: 'master.passwd.byname', key: 'nisuser1'  } # Have to use the '.byname' suffix
+        - { map: 'group',                key: 'nisgroup1' }

@@ -1,0 +1,5 @@
+[ypservers]
+master  ansible_host=192.0.2.2
+
+[ypclients]
+client  ansible_host=192.0.2.3

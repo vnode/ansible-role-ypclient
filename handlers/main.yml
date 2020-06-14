@@ -1,0 +1,4 @@
+---
+- name: regen master.passwd
+  command:
+    cmd: "pwd_mkdb -p /etc/master.passwd"

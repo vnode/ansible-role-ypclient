@@ -1,0 +1,136 @@
+---
+# Input validation
+- name: "Check YP/NIS domain name and servers are set"
+  run_once: true
+  assert:
+    that:
+      - lookup('vars', ypclient_var) is defined
+      - lookup('vars', ypclient_var) | length > 0
+      - lookup('vars', ypclient_var) != None
+    fail_msg: "Set '{{ ypclient_var }} to a non-empty value.'"
+  loop_control:
+    loop_var: ypclient_var
+  with_items:
+    - ypclient_domain
+    - ypclient_servers
+
+- name: "Check: IP info available for servers if NIS domain does not use DNS"
+  run_once: true
+  assert:
+    that:
+      - ypclient_serverinfo.get(ypclient_server) is defined
+      - ypclient_server in ypclient_serverinfo
+      - ypclient_serverinfo.get(ypclient_server) | ipaddr | length > 0
+    fail_msg: "{{ ypclient_server }} needs IP information set in 'ypclient_serverinfo' if using 'ypclient_usedns = false' and 'ypclient_set_hosts = true'."
+  loop_control:
+    loop_var: ypclient_server
+  with_items: "{{ ypclient_servers }}"
+  when:
+    - not ypclient_usedns
+    - ypclient_set_hosts
+
+# Complete system setup
+- name: "Create /etc/yp directory"
+  file:
+    state: directory
+    path: /etc/yp
+    mode: "0700"
+    owner: root
+    group: wheel
+
+- name: "Create /etc/yp/DOMAINNAME server list for ypbind"
+  template:
+    src: "DOMAINNAME.j2"
+    dest: "/etc/yp/{{ ypclient_domain }}"
+    mode: "0600"
+    owner: root
+    group: wheel
+
+- name: "Add servers to /etc/hosts"
+  blockinfile:
+    path: "/etc/hosts"
+    block: |
+      {% for host in ypclient_serverinfo -%}
+      {% for addr in ypclient_serverinfo[host] | ipaddr() -%}
+      {{ addr }} {{ host }}
+      {% endfor -%}
+      {% endfor %}
+    marker: "# {mark} YP/NIS servers - {{ ypclient_domain }}"
+    mode: "0644"
+    owner: root
+    group: wheel
+  loop_control:
+      loop_var: ypclient_server
+  with_items: "{{ ypclient_servers }}"
+  when:
+    - ypclient_set_hosts
+
+- name: "Save YP domainname for the system"
+  copy:
+    content: "{{ ypclient_domain }}"
+    dest: /etc/domainname
+    owner: root
+    group: wheel
+    mode: "0644"
+  register: ypclient__etc_domainname
+  when:
+    - ypclient_set_domainname
+
+- name: "Check YP domainname value on the system"
+  command:
+    cmd: "domainname"
+  register: ypclient__domainname
+  changed_when: false
+
+- name: "Update YP domainname for the system"
+  command: domainname {{ ypclient_domain }}
+  when:
+    - ypclient_set_domainname
+    - ypclient__domainname.stdout != ypclient_domain
+
+
+# Bring up the YP/NIS client
+- name: "Enable portmap"
+  service:
+    name: portmap
+    enabled: true
+    state: started
+
+- name: "Enable ypbind"
+  service:
+    name: ypbind
+    enabled: true
+    state: started
+
+
+# Test if we can reach any servers
+- name: "Try up to 10min that we can reach the servers"
+  command:
+    cmd: "ypcat -d {{ ypclient_domain }} ypservers"
+  register: ypclient__server_up
+  until: ypclient__server_up.rc == 0
+  changed_when: false
+  retries: 60
+  delay: 10
+  vars:
+    ansible_command_timeout: 10
+
+- name: "Abort if no YP/NIS servers found"
+  fail:
+    msg: "Abort: Unable to reach any NIS server. Continuing would cause the client to hang indefinitely."
+  when: ypclient__server_up.rc != 0
+
+
+# Prepare the YP/NIS lookups
+- name: "Prepare YP/NIS maps lookup in on-system passwd/group database."
+  lineinfile:
+    path: "{{ ypmap.file }}"
+    mode: "{{ ypmap.mode }}"
+    owner: "{{ ypmap.owner }}"
+    group: "{{ ypmap.group }}"
+    line: "{{ ypmap.pattern }}"
+    validate: "{{ ypmap.validate | default('true %s') }}"
+  notify: "{{ ypmap.notify | default(omit) }}"
+  loop_control:
+    loop_var: ypmap
+  with_items: "{{ ypclient_lookup_maps }}"
