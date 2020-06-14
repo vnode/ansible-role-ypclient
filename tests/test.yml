@@ -96,6 +96,6 @@
       loop_control:
         loop_var: mapname
       with_items:
-        - { map: 'passwd',               key: 'nisuser1'  }
-        - { map: 'master.passwd.byname', key: 'nisuser1'  } # Have to use the '.byname' suffix
-        - { map: 'group',                key: 'nisgroup1' }
+        - { map: 'passwd', key: 'nisuser1' }
+        - { map: 'master.passwd.byname', key: 'nisuser1' } # Have to use '.byname', or map isn't found
+        - { map: 'group', key: 'nisgroup1' }
