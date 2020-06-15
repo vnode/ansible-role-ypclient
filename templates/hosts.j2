@@ -1,0 +1,5 @@
+{% for host in ypclient_serverinfo -%}
+{% for addr in ypclient_serverinfo[host] | ipaddr() -%}
+{{ addr }}	{{ host }}
+{% endfor -%}
+{% endfor %}
