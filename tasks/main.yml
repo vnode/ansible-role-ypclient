@@ -51,7 +51,7 @@
     path: "/etc/hosts"
     block: "{{ lookup('template', 'templates/hosts.j2') }}" # noqa 203
     # The tab characters are intentional
-    marker: "# {mark} YP/NIS servers - {{ ypclient_domain }}"
+    marker: "# {mark} {{ ypclient_domain }} - YP/NIS servers"
     mode: "0644"
     owner: root
     group: wheel
