@@ -1,7 +1,7 @@
 galaxy_info:
   role_name: ypclient
   author: Rogier Krieger
-  description: Install and configure YP client
+  description: Install and configure a YP/NIS client
   company: vNode.net
   issue_tracker_url: https://github.com/vnode/ansible-role-ypclient/issues/
   license: MIT
