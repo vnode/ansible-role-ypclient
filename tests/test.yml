@@ -77,7 +77,7 @@
     ansible_become_user: root
 
   roles:
-    - role: ansible-role-ypclient
+    - role: "{{ 'vnode.' iflookup('env','ROLE_NAME') else 'ansible-role-' }}ypclient"
       vars:
         ypclient_domain: "nisdomain"
         ypclient_servers: "{{ groups['ypservers'] }}"
