@@ -1,8 +1,8 @@
 ---
 # Input validation
 - name: "Check YP/NIS domain name and servers are set"
-  run_once: true
-  assert:
+  run_once: True
+  ansible.builtin.assert:
     that:
       - lookup('vars', ypclient_var) is defined
       - lookup('vars', ypclient_var) | length > 0
@@ -15,8 +15,8 @@
     - ypclient_servers
 
 - name: "Check: IP info available for servers if NIS domain does not use DNS"
-  run_once: true
-  assert:
+  run_once: True
+  ansible.builtin.assert:
     that:
       - ypclient_serverinfo.get(ypclient_server) is defined
       - ypclient_server in ypclient_serverinfo
@@ -31,7 +31,7 @@
 
 # Complete system setup
 - name: "Create /etc/yp directory"
-  file:
+  ansible.builtin.file:
     state: directory
     path: /etc/yp
     mode: "0700"
@@ -39,7 +39,7 @@
     group: wheel
 
 - name: "Create /etc/yp/DOMAINNAME server list for ypbind"
-  template:
+  ansible.builtin.template:
     src: "DOMAINNAME.j2"
     dest: "/etc/yp/{{ ypclient_domain }}"
     mode: "0600"
@@ -47,9 +47,9 @@
     group: wheel
 
 - name: "Add servers to /etc/hosts"
-  blockinfile:
+  ansible.builtin.blockinfile:
     path: "/etc/hosts"
-    block: "{{ lookup('template', 'templates/hosts.j2') }}" # noqa 203
+    block: "{{ lookup('template', 'templates/hosts.j2') }}" # noqa no-tabs
     # The tab characters are intentional
     marker: "# {mark} {{ ypclient_domain }} - YP/NIS servers"
     mode: "0644"
@@ -59,7 +59,7 @@
     - ypclient_set_hosts
 
 - name: "Save YP domainname for the system"
-  copy:
+  ansible.builtin.copy:
     content: "{{ ypclient_domain }}"
     dest: /etc/domainname
     owner: root
@@ -70,13 +70,13 @@
     - ypclient_set_domainname
 
 - name: "Check YP domainname value on the system"
-  command:
+  ansible.builtin.command:
     cmd: "domainname"
   register: ypclient__domainname
-  changed_when: false
+  changed_when: False
 
 - name: "Update YP domainname for the system"
-  command: domainname {{ ypclient_domain }}
+  ansible.builtin.command: domainname {{ ypclient_domain }}
   when:
     - ypclient_set_domainname
     - ypclient__domainname.stdout != ypclient_domain
@@ -84,39 +84,39 @@
 
 # Bring up the YP/NIS client
 - name: "Enable portmap"
-  service:
+  ansible.builtin.service:
     name: portmap
-    enabled: true
+    enabled: True
     state: started
 
 - name: "Enable ypbind"
-  service:
+  ansible.builtin.service:
     name: ypbind
-    enabled: true
+    enabled: True
     state: started
 
 
 # Test if we can reach any servers
 - name: "Try up to 10min that we can reach the servers"
-  command:
+  ansible.builtin.command:
     cmd: "ypcat -d {{ ypclient_domain }} ypservers"
   register: ypclient__server_up
   until: ypclient__server_up.rc == 0
-  changed_when: false
+  changed_when: False
   retries: 60
   delay: 10
   vars:
     ansible_command_timeout: 10
 
 - name: "Abort if no YP/NIS servers found"
-  fail:
+  ansible.builtin.fail:
     msg: "Abort: Unable to reach any NIS server. Continuing would cause the client to hang indefinitely."
   when: ypclient__server_up.rc != 0
 
 
 # Prepare the YP/NIS lookups
 - name: "Prepare YP/NIS maps lookup in on-system passwd/group database."
-  lineinfile:
+  ansible.builtin.lineinfile:
     path: "{{ ypmap.file }}"
     mode: "{{ ypmap.mode }}"
     owner: "{{ ypmap.owner }}"
