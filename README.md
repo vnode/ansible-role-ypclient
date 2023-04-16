@@ -1,6 +1,6 @@
 # Ansible role: ypclient
 
-[![Build Status](https://travis-ci.org/vnode/ansible-role-ypclient.svg?branch=master)](https://travis-ci.org/vnode/ansible-role-ypclient)
+[![CI](https://github.com/vnode/ansible-role-ypclient/actions/workflows/ci.yml/badge.svg)](https://github.com/vnode/ansible-role-ypclient/actions/workflows/ci.yml)
 
 This role installs and configures the YP/NIS client that is part of OpenBSD and other BSD* operating systems.
 Currently, this role only supports OpenBSD, with the intent on adding FreeBSD and NetBSD in a near-future update.
