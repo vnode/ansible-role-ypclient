@@ -1,4 +1,4 @@
 ---
-- name: regen master.passwd
-  command:
-    cmd: "pwd_mkdb -p /etc/master.passwd"
+- name: Regen master.passwd
+  ansible.builtin.command:
+    cmd: "pwd_mkdb -p /etc/master.passwd" # noqa no-changed-when

@@ -76,7 +76,8 @@
   changed_when: False
 
 - name: "Update YP domainname for the system"
-  ansible.builtin.command: domainname {{ ypclient_domain }}
+  ansible.builtin.command:
+    cmd: domainname {{ ypclient_domain }} # noqa no-changed-when
   when:
     - ypclient_set_domainname
     - ypclient__domainname.stdout != ypclient_domain

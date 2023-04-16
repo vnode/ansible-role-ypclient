@@ -11,7 +11,7 @@ ypclient_lookup_maps:
     file: '/etc/master.passwd'
     pattern: '+:*::::::::'
     validate: 'pwd_mkdb -c %s'
-    notify: 'regen master.passwd'
+    notify: 'Regen master.passwd'
     mode: '0600'
     owner: 'root'
     group: 'wheel'
