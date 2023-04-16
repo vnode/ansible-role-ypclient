@@ -5,7 +5,7 @@ ypclient_servers: []
 ypclient_serverinfo: {}
 
 # YP/NIS optional settings
-ypclient_usedns: true
+ypclient_usedns: True
 ypclient_lookup_maps:
   - name: 'passwd'
     file: '/etc/master.passwd'
@@ -23,5 +23,5 @@ ypclient_lookup_maps:
     group: 'wheel'
 
 # Options to handle multiple YP/NIS domains on a host
-ypclient_set_hosts: false       # If true, updates /etc/hosts
-ypclient_set_domainname: true   # If true, updates /etc/domainname
+ypclient_set_hosts: False       # If true, updates /etc/hosts
+ypclient_set_domainname: True   # If true, updates /etc/domainname
